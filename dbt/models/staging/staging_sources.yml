@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+- name: weather_data
+  schema: below_zero
+  tables:
+    - name: weather_daily_raw
+    - name: weather_hourly_raw
+
+- name: flights_data
+  schema: below_zero
+  tables:
+    - name: flights
+    - name: airports
+    - name: regions
+

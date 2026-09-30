@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: mart_daily_airport
+    description: One row per airport per day for the 5 Texas airports, with daily weather.
+    columns:
+      - name: airport_code
+        tests:
+          - not_null
+          - accepted_values: 
+              values: ['DFW', 'IAH', 'AUS', 'SAT', 'MAF']
+      - name: date
+        tests:
+          - not_null
+      - name: cancel_rate
+        tests:
+          - not_null

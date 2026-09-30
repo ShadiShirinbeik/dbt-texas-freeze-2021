@@ -1,165 +1,74 @@
-<center><h2> Project <br><h1>⛈️🌪️❄️Weather vs. Flights ✈️ 🛩️ </center>
+# texas-freeze-2021
 
-It's project time again 👷🏽‍♂️🛠️!  
-In this project you will combine your Python, SQL, API and dbt skills and use them in combination with each other.  
+How Winter Storm Uri grounded five Texas airports — a flight and weather analysis built with dbt, pandas and seaborn.
 
+## The story
 
+In February 2021 an Arctic outbreak pushed Texas below freezing for more than a week. On 15 February at 01:20 the state grid operator (ERCOT) began rolling blackouts that lasted until 19 February. Around 4.5 million homes lost power.
 
-## Objectives
-As we have learned, the two main tools of Data Analysts are SQL and Python. In the last lectures and exercises, you have learned 
+This project looks at what that did to air travel. I took every scheduled departure from the five busiest airports in the affected area — **DFW, IAH, AUS, SAT and MAF** — for January to March 2021, joined it to daily weather at each airport, and asked one question: *was it the cold that stopped the flights, or something else?*
 
-- how to use SQL
-- retrieve data from an API and import it into a database
-- transform it into insightful tables
-- and get data from a database into a pandas dataframe
+The short answer: the cold opened the door, but the storm and the blackout walked through it. Airports kept flying through several sub-zero days. Cancellations only spiked in the six days that line up with the winter storm and the grid failure — and recovered a day *before* the freeze ended.
 
-And now you should do it all together.
+## Data
 
+| Source | What | Grain |
+|---|---|---|
+| US Bureau of Transportation Statistics | On-time performance — every scheduled flight, with delay and cancellation flags | one row per flight |
+| Meteostat | Daily and hourly weather per airport station | one row per airport per day / hour |
 
+Period: 1 Jan – 31 Mar 2021. Airports: DFW (Dallas/Fort Worth), IAH (Houston), AUS (Austin), SAT (San Antonio), MAF (Midland).
 
+## Stack
 
-## Scenario Briefing
-The Research Center for Aerospace (RCA), where you work for as Data Analyst, wants to keep track of accumulated flights data in combination with weather data. 
+- **PostgreSQL** — raw and prepared tables
+- **dbt** — transformation layer; `mart_daily_airport` aggregates flights to one row per airport per day and joins the same day's weather. Tests cover nulls, accepted airport codes and uniqueness of (airport, date).
+- **pandas + SQLAlchemy** — load the mart into Python
+- **seaborn / matplotlib** — charts
+- **Jupyter** — one notebook, one section per insight
 
-Your task is to find a situation where the weather conditions have impacted flight performance and provide insights on how different weather conditions affect flights in various cities / airports.
+## Insights
 
-## What you need
+### 1. The schedule barely changed
 
-- a weather event and the **time period** for data
-- **flight data** for the time period and affected airports
-- **weather data** for the time period and for the weather stations at the affected airports
+Scheduled departures dropped only 0–11% during the storm days (IAH actually rose 3%). Airlines did not cut flights ahead of the storm — they kept the timetable and cancelled day-of. The damage is in the cancellation rate, not the schedule.
 
-![](images/PIREPs-featured.jpg)  
+### 2. Cancellations are where the damage is
 
-## Setting-up working environment
+Daily cancellation rate per airport for February, with the ERCOT grid-emergency window shaded. Every airport spikes in the same window, 14–19 February.
 
-​	**Project Schema in our DB**  
+### 3. How cold, and for how long
 
-In our DB each team will get a new project schema . Members will have write and read rights. (fingers crossed!)
+Every airport bottomed out on 15–16 February — DFW at −18.3 °C, MAF −18.8 °C, even Houston at −10.5 °C. Duration mattered more than the minimum: DFW spent 12 of February's 28 days below freezing, AUS and SAT 9, MAF 16.
 
-​	<b style="color:yellow">Project GitHub Repo</b>
-<ol>
+### 4. Cancellations followed the storm, not the temperature
 
->This repo will serve 3 purposes:
-> - retrieving the original data from sources and loading it to the DB
-> - a subdirectory `dbt` will contain the dbt project files and folders
-> - the notebooks with experiments, analysis and visualizations. Organize your repo with folders, notebooks and sql files.<br><br>
+DFW was below freezing for 12 days (9–20 Feb), but cancellations only spiked on 6 of them (14–19 Feb). The airport kept flying through five sub-zero days before the storm, and recovered on 19 Feb, a day before the freeze ended. The cancellation window matches the winter storm and the ERCOT blackout almost exactly — that is what grounded the airport, not the cold.
 
+### 5. Cold was necessary, not sufficient
 
-Collaborate!
-1. Pick one team member who will fork this repository to their GitHub Account. Same team member will also be the dbt manager and update the connections in their dbt account
-2. The repo owner then adds the team members to the repository as collaborators  
-   (in GitHub repo: **Settings** > **Collaborators** > "**Add People**" Button)
-3. All team members can clone the repository from the owner to local machines
-4. Prioritize using branches and pull requests reviewed by other team members, so the main remains the "source of truth"
-5. Check your `.gitignore` in order to avoid pushing credentials to GitHub. 
-</ol>
+Scatter of daily minimum temperature against cancellation rate, all airports, all 90 days. Above 0 °C there are essentially no cancellations. Below 0 °C cancellations appear — but only on the storm days. Many sub-zero airport-days had almost none.
 
-​	<b style="color:yellow">dbt Subdirectory</b>
-<ol>
+*(More insights in progress: recovery speed per airport, airline share, top routes, delay by hour of day.)*
 
->This subfolder will only hold the dbt project files (yml files, sql model files etc.)
-1. Instead of having a separate GitHub repo (as in lectures), we can also keep the dbt repo in a **Subdirectory of the main Project Repo**. 
-   
-2. Add a new folder to your project folder. Name it `dbt` or so. 
-   - Copy all files and folders from your `dbt_meteostat` into the `dbt` folder
-   - do not copy `.git` to `dbt` folder. Remove it if you did.
-   - remove all `mart` models. Developing mart models would not fit in our time frame.
+## Repository layout
 
-3. in dbt Cloud <u style="color:red">only the owner of the forked Project Repo and the dbt account</u> needs to ...
-	#### a. modify the Schema
-     <details><summary style="color:pink">(click for How-To)</summary> 
-          <i>assuming you have a dbt project already</i>
-          <ul>
-          <li>click on your account name in the left side menu 
-          <li> select <b>Your Profile</b>
-          <li> in the secondary navigation select <b>Credentials</b>
-          <li> click the project name and click the button in the lower right corner <b>Edit</b>
-          <li> re-enter your DB passwort and change the <b>Schema</b> to your group's schema name
-          <li> FYI: <b>Test Connection</b> is sometimes buggy.
-          <li> click the <b>Save</b> button
-          </ul>
-     </details>
-     
-     #### b. connect to the GitHub repository and the Subdirectory 
-     
-     <details><summary style="color:pink">(click for How-To)</summary> 
-          <ul>
-          <li>click on your account name in the left side menu 
-          <li> select <b>Your Profile</b>
-          <li> in the secondary navigation select <b>Project</b> and click the project name
-          <li> under <b>Repository</b> click the GitHub link
-          <li> click the button <b>Edit</b>
-          <li> click the button <b>Disconnect</b> and then <b>Confirm Disconnect</b>
-          <li> now under <b>Repository</b> click <b>Configure Repository</b>
-          <li> select the <b>Git Clone</b> option (in parallel you need to go to you GitHub repo and copy the SHH git URL from your forked Project repo)
-          <li> in the <b>Git URL</b> field: paste the SHH git URL and click the "Import" button
-          <li> under <b>Repository</b> click the GitHub link again
-          <li> copy the <b>Deploy key</b> (everything including the "ssh-rsa...")
-          <li> add the <b>Deploy key</b> in your forked Project repo (see <b>Settings</b>) in GitHub
-          <li> Don't forget to select the checkbox "Allow write access"
-          <li> back in dbt Cloud Project details (see first 3 steps) click the "Edit" button on the bottom right
-          <li> under "Project subdirectory" enter <code>dbt</code>
-          <li> click the button "Save" on the bottom right
-          </ul>
-     </details><br>
+```
+dbt/
+  models/
+    prep/          staging models (flights, airports, weather)
+    mart/          mart_daily_airport.sql + schema.yml
+notebooks/
+  analysis.ipynb   the insights, one section each
+README.md
+```
 
-</ol>
+## How to run
 
-## Task Steps in Detail
-1. Select a historical weather event that occurred in the United States within the past 30 years that you believe would have led to the cancellation of flights. Research online. Based on the time period when the weather event occurred, determine which timeframe for flight data would best reflect both regular traffic and the associated irregularities.  
+1. Load the raw BTS and Meteostat tables into Postgres.
+2. `dbt run` then `dbt test` inside `dbt/`.
+3. Open `notebooks/analysis.ipynb`, point the SQLAlchemy connection string at your database, run top to bottom.
 
-2. Retrieve flight data as described in [fligths_data_wrangling.ipynb](fligths_data_wrangling.ipynb) and import it into the PostgreSQL database:  
-     **a.** **`To Do:`** specify period  
-     **b.** download and clean data `(pre-coded)`  
-     **c.** **`To Do:`** Reduce your dataframe to include 3-5 origin airports (check if they have weather stations here: https://meteostat.net/en/)  
-     **d.** **`To Do:`** Connect to database and import the flights data as a table in the project schema of your team.
+## Author
 
-     **e.** From the `airports` table in schema `public` filter the relevant airports and use the result set to create a new table in your project schema.  
-     💡<b style="color:lime">Hint:</b> or you copy the whole `airports` table.
-
-3. As next step, get historical weather data using the [Meteostat API](https://dev.meteostat.net/api/point/daily.html#endpoint).   
-     Based on the notebooks from our API lectures `meteostat_daily_fromAPI_toDB_lecture.ipynb`  and  `meteostat_hourly_fromAPI_toDB_lecture.ipynb` develop **new notebook(s)** to make API Calls to retrieve the necessary data, and to push it to the project schema in our database. Up to you whether you want to use API endpoints for hourly or daily weather.  
-     💡<b style="color:lime">Hint:</b> if the period you selected for the weather event is only a few days long, go for the **hourly data**. It gives you more granularity.
-
-4. Using **dbt Cloud** transform the original data to insightful tables.  
-   💡<b style="color:lime">Hints:</b> 
-   - due to time restrictions, we will stick to `staging` and `prep` models. No `mart` models!
-   - actually <font style="color:gold">you can re-use the yml files and all models from our lectures</font>
-   - You might need to update the raw table names if you named them differently
-   - And the staging for flights doesn't need the filter for one month 
- 
-   The transformed tables should allow you to visualize flight events and weather changes over time, to summarize useful statistics  in (e.g. to compare regular flight traffic averages with the metrics during the weather extremes)  
-
-
-
-5. In a Jupyter Notebook use SQLAlchemy to retrieve data from database tables and store it in pandas DataFrames.  
-   💡<b style="color:lime">Hint</b>: if time is short you can also use the DBeaver's "Extract as CSV" option.
-
-6. With pandas you have multiple options:
-
-     **a.** Perform a basic EDA on the initial data (prep or staging tables). The EDA should reflect what data is your project based on.  
-     **b.** Come up with three different hypotheses regarding your available data. You could ask questions like 
-
-     - "Can we see the weather event in the weather data?" 
-     - "Can we see the weather event in the flights data?"
-     - "Can we see a correlation between the data?"
-     - "Can we see anything unusual? Any anomalies?"
-     - ...
-
-     **c.** Go deeper into your hypotheses (perhaps linking `dep_delay` to weather) and clearly outline your findings (either that everything is as expected or any unexpected results).  
-     
-     **d.** create visualizations reflecting your findings. (doesn't need to be many. Sometimes 1 or 2 charts are very insightful.)
-
-
-
-### Deliverables
-1. Jupyter notebook containing the loading and the cleaning of the flights data and the data import into the database.
-2. Jupyter notebook with calls to the meteostat API and the data import into the database.
-3. Jupyter notebook with EDA of weather data and flight traffic. Investigate and analyze the relationship between a specific weather event (which you’ll define) and any irregularities in flight traffic. Be sure to include relevant visualizations to support your findings.
-4. ~10-minutes steakholder presentation (eg. via google slides) to your colleagues, presenting the results of your data exploration and answering your hypotheses. (show you code only if there are questions)
-
-
-
-**Keep in mind that your API calls are limited!**  
-**When possible, separate code calling the API from other code working on the data.**
+Payam Zahedi
